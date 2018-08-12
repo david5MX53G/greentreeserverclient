@@ -8,12 +8,11 @@ package com.greentree.controller;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import static java.lang.System.out;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.logging.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -48,6 +47,9 @@ public class GreenTreeController {
     private static Socket socket;
     private static ObjectOutputStream out;
     private static ObjectInputStream in;
+    
+    /** This is used to identify the method in log messages */
+    private String methodName;
 
     /**
      * This instantiates the {@link GreenTreeController#instance_} of this
@@ -56,11 +58,23 @@ public class GreenTreeController {
     private GreenTreeController() {
         try {
             inetAddr = InetAddress.getLocalHost();
-        } catch (UnknownHostException ex) {
+        } catch (IOException ex) {
             LOG.error("constructor threw " + ex.getClass().getSimpleName()
                 + ": " + ex.getMessage());
         }
         LOG.debug("GreenTreeController() complete");
+    }
+    
+    /**
+     * This ensures the {@link GreenTreeController#socket} and associated 
+     * streams are closed.
+     * 
+     * @throws Throwable when badness happens
+     */
+    @Override
+    protected void finalize() throws Throwable {
+        this.closeSocket();
+        super.finalize();
     }
 
     /**
@@ -76,30 +90,50 @@ public class GreenTreeController {
 
         return instance_;
     }
-
-    /**
-     * This closes any extant {@link GreenTreeController#socket} and returns a
-     * fresh one.
-     *
-     * @return {@link java.net.Socket}
+    
+    /** 
+     * This opens a {@link GreenTreeController#socket}, {@link 
+     * GreenTreeController#in}, and {@link GreenTreeController#out}.
      */
-    private Socket getSocket() {
-        LOG.debug("Socket getSocket() started");
+    private boolean openSocket() {
+        boolean result = false;
         try {
-            if (socket == null || socket.isClosed()) {
-                socket = new Socket(inetAddr, PORT);
-            }
-
+            methodName = "boolean openSocket()";
+            
+            // open a socket
+            socket = new Socket(inetAddr, PORT);
             if (socket instanceof Socket) {
-                LOG.debug("Socket getSocket() succeeded");
+                LOG.debug(methodName + " Socket acquired");
             } else {
-                LOG.error("Socket getSocket() failed");
+                throw new IOException(methodName + " Socket failed");
             }
-        } catch (IOException ex) {
-            LOG.error("Socket getSocket() threw "
-                + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+            
+            // open outputstream
+            out = new ObjectOutputStream(socket.getOutputStream());
+            out.flush();
+            if (out instanceof ObjectOutputStream) {
+                LOG.debug(methodName + " ObjectOutputStream acquired");
+            } else {
+                throw new IOException(this.getClass().getSimpleName()
+                    + " ObjectOutputStream getOut() failed");
+            }
+            
+            // open inputstream
+            in = new ObjectInputStream(socket.getInputStream());
+            if (in instanceof ObjectInputStream) {
+                LOG.debug(methodName + " ObjectInputStream acquired");
+            } else {
+                throw new IOException(this.getClass().getSimpleName()
+                    + " ObjectOutputStream getOut() failed");
+            }
+            
+            // update result
+            result = true;
+        } catch (IOException e) {
+            LOG.error(methodName + " threw " + e.getClass().getSimpleName() 
+                + ": " + e.getMessage());
         }
-        return socket;
+        return result;
     }
 
     /**
@@ -112,132 +146,99 @@ public class GreenTreeController {
     private boolean closeSocket() {
         boolean result;
         try {
-            if (!socket.isClosed()) {
+            methodName = "closeSocket";
+            if (in != null) {
+                in.close();
+            }
+            
+            if (out != null) {
+                out.close();
+            }
+            
+            if (socket != null) {
                 socket.close();
             }
+            
             result = true;
+            LOG.debug(methodName + " complete");
         } catch (NullPointerException | IOException ex) {
             result = false;
-            LOG.error("boolean closeSocket() threw "
+            LOG.error(methodName + " threw "
                 + ex.getClass().getSimpleName() + ": " + ex.getMessage());
         }
-        LOG.debug("closeSocket() returned " + String.valueOf(result));
         return result;
     }
 
     /**
-     * This closes any extant {@link GreenTreeController#out} and returns a
-     * fresh one, flushed and ready for anything!
-     *
-     * @return {@link java.io.ObjectOutputStream}
-     */
-    private ObjectOutputStream getOut() {
-        LOG.debug("getOut() started");
-        try {
-            socket = this.getSocket();
-            LOG.debug("socket = " + socket.getClass().getSimpleName());
-
-            if (out != null) {
-                out.close();
-                out = null;
-                LOG.debug("ObjectOutputStream closed and set to null");
-            }
-
-            out = new ObjectOutputStream(socket.getOutputStream());
-            out.flush();
-
-            if (out instanceof ObjectOutputStream) {
-                LOG.debug("out instanceof ObjectOutputStream = "
-                    + String.valueOf(out instanceof ObjectOutputStream));
-            } else {
-                throw new IOException(this.getClass().getSimpleName()
-                    + " ObjectOutputStream getOut() failed");
-            }
-
-        } catch (IOException ex) {
-            LOG.error("ObjectOutputStream getOut() threw "
-                + ex.getClass().getSimpleName() + ": " + ex.getMessage());
-        }
-        LOG.debug("ObjectOutputStream getOut() done");
-        return out;
-    }
-
-    /**
-     * This closes any extant {@link GreenTreeController#out} and returns a
-     * fresh one, flushed and ready for anything!
-     *
-     * @return {@link java.io.ObjectOutputStream}
-     */
-    private ObjectInputStream getIn() {
-        LOG.debug("getIn() started");
-        try {
-            socket = this.getSocket();
-            if (in != null) {
-                in.close();
-                in = null;
-            }
-            in = new ObjectInputStream(socket.getInputStream());
-        } catch (IOException ex) {
-            LOG.error("ObjectInputStream getIn() threw "
-                + ex.getClass().getSimpleName() + ": " + ex.getMessage());
-        }
-        return in;
-    }
-
-    /**
-     * Initializes a <code>Properties</code> object for acquiring runtime config
-     * settings.
-     *
-     * @return <code>true</code> for success, <code>false</code> on failure
-     */
-    public static boolean loadProperties() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    /**
      * This connects to a remote <code>GreenTreeServer</code>, sends it an
-     * {@link java.security.interfaces.RSAPublicKey} and {@link String} along
-     * with instructions to register these on the server as a new {@link
-     * com.greentree.model.domain.Token}.
+     * {@link java.security.interfaces.RSAPublicKey} and {@link String} with 
+     * which to authenticate a {@link com.greentree.model.domain.Token}.
      *
      * @param key <code>String</code> for the <code>Token</code>
      * @param ciphertext <code>RSAPublicKey</code> for the <code>Token</code>
      * @return <code>true</code>, if successful
      */
     public boolean registerToken(RSAPublicKey key, String ciphertext) {
-        LOG.debug("boolean registerToken(RSAPublicKey, String) started");
+        methodName = "boolean registerToken(RSAPublicKey, String)";
+        LOG.debug(methodName + " started");
         boolean result = false;
         try {
-            out = this.getOut();
+            this.openSocket();
+            String command = "registerToken(RSAPublicKey, String)";
             
-            result = out instanceof ObjectOutputStream;
+            out.writeObject(command);
+            LOG.debug(methodName + " command String written to socket");
             
-            if (result) {
-                LOG.debug("ObjectOutputStream loaded");
-            } else {
-                throw new IOException("ObjectOutputStream did not load");
-            }
-            
-            out.writeObject("registerToken(RSAPublicKey, String)");
             out.writeObject(key);
+            LOG.debug(methodName + " RSAPublicKey written to socket");
+            
             out.writeObject(ciphertext);
-            in = this.getIn();
+            LOG.debug(methodName + " ciphertext String written to socket");
+                        
             result = (Boolean) in.readObject();
         } catch (ClassNotFoundException | IOException ex) {
-            LOG.error("boolean registerToken(RSAPublicKey, String) threw "
+            LOG.error(methodName + " threw "
                 + ex.getClass().getSimpleName() + ": " + ex.getMessage());
         } finally {
             this.closeSocket();
         }
 
-        LOG.debug("registerToken(RSAPublicKey, String) returning "
-            + String.valueOf(result));
-
+        LOG.debug(methodName + " returning " + String.valueOf(result));
         return result;
     }
 
-    public boolean registerToken(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    /**
+     * This connects to a remote <code>GreenTreeServer</code> and registers a 
+     * new {@link com.greentree.model.domain.Token}.
+     * 
+     * @param plaintext {@link String} will be used to authenticate 
+     * @return <code>true</code>, if successful
+     */
+    public boolean registerToken(String plaintext) {
+        methodName = "boolean registerToken(String)";
+        LOG.debug(methodName + "started");
+        boolean result = false;
+        try {
+            this.openSocket();
+            String command = "registerToken(String)";
+            
+            out.writeObject(command);
+            LOG.debug(methodName + " command String written to socket: " 
+                + command);
+            
+            out.writeObject(plaintext);
+            LOG.debug(methodName + " plaintext written to socket");
+            
+            result = (Boolean) in.readObject();
+        } catch (ClassNotFoundException | IOException ex) {
+            LOG.error(methodName + "threw "
+                + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+        } finally {
+            this.closeSocket();
+        }
+
+        LOG.debug(methodName + " result: " + String.valueOf(result));
+        return result;
     }
 
     /**
@@ -250,13 +251,14 @@ public class GreenTreeController {
      * @return <code>true</code>, if the server reports success
      */
     public boolean registerService(String tokenService) {
-        LOG.debug("boolean registerService(" + tokenService + ") started");
+        methodName = "boolean registerService(String)";
+        LOG.debug(methodName + " started: " + tokenService);
         boolean result = false;
+        
         try {
-            out = this.getOut();
+            this.openSocket();
             out.writeObject("registerService(String)");
             out.writeObject(tokenService);
-            in = this.getIn();
             result = (Boolean) in.readObject();
         } catch (ClassNotFoundException | IOException ex) {
             LOG.error("boolean registerService(String tokenService) threw "
@@ -265,21 +267,87 @@ public class GreenTreeController {
             this.closeSocket();
         }
 
-        LOG.debug("boolean registerService(" + tokenService + ") returned "
-            + String.valueOf(result));
-
+        LOG.debug(methodName + " returned " + String.valueOf(result));
         return result;
     }
 
     public ArrayList<String> getData(RSAPublicKey key) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        methodName = "ArrayList<String> getData(RSAPublicKey)";
+        ArrayList<String> result = null;
+        
+        try {
+            this.openSocket();
+            out.writeObject("getData(RSAPublicKey)");
+            out.writeObject(key);
+            result = (ArrayList<String>) in.readObject();
+        } catch (ClassNotFoundException | IOException ex) {
+            LOG.error(methodName + " threw " + ex.getClass().getSimpleName() 
+                + " " + ex.getMessage());
+        } finally {
+            this.closeSocket();
+        }
+        
+        return result;
     }
 
+    /**
+     * This connects to a remote <code>GreenTreeServer</code> and retrieves the 
+     * {@link RSAPublicKey} of the active {@link Token} for this client on the 
+     * server.
+     * 
+     * @return <code>RSAPublicKey</code> of the active client <code>Token</code>
+     */
     public RSAPublicKey getPublicKey() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        methodName = "RSAPublicKey getPublicKey()";
+        LOG.debug(methodName + " started");
+        RSAPublicKey result = null;
+        
+        try {
+            this.openSocket();
+            out.writeObject("getPublicKey()");            
+            result = (RSAPublicKey) in.readObject();
+            
+            if (result instanceof RSAPublicKey) {
+                LOG.debug(methodName + " acquired RSAPublicKey");
+            } else {
+                throw new ClassNotFoundException(" failed to get RSAPublicKey");
+            }
+        } catch (ClassNotFoundException | IOException ex) {
+            LOG.error(methodName + " threw " + ex.getClass().getSimpleName() 
+                + ": " + ex.getMessage());
+        } finally {
+            this.closeSocket();
+        }
+        
+        return result;
     }
 
-    public boolean addBlock(String msg, RSAPublicKey toKey, long time, long timeInMillis) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public boolean addBlock(String msg, RSAPublicKey toKey, long notBefore, long notAfter) {
+        methodName = "addBlock(String, RSAPublicKey, long, long)";
+        LOG.debug(methodName + " started");
+        boolean result = false;
+        
+        try {
+            this.openSocket();
+            out.writeObject("addBlock(String, RSAPublicKey, long, long)");
+            out.writeObject(msg);
+            out.writeObject(toKey);
+            out.writeObject(notBefore);
+            out.writeObject(notAfter);
+            result = (boolean) in.readObject();
+            
+            if (result) {
+                LOG.debug(methodName + " returned true");
+            } else {
+                throw new IOException(methodName + " returned false");
+            }
+        } catch (ClassNotFoundException | IOException ex) {
+            LOG.error(methodName + " threw " + ex.getClass().getSimpleName() 
+                + ": " + ex.getMessage());
+        } finally {
+            this.closeSocket();
+        }
+        
+        return result;
     }
 }

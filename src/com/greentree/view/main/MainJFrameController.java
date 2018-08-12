@@ -56,6 +56,9 @@ public class MainJFrameController implements ActionListener {
      * {@link org.apache.logging.log4j.Logger} is for logging logs to the log
      */
     Logger logger = LogManager.getLogger();
+    
+    /** This is used for logging to identify which method is logging messages */
+    private String methodName;
 
     /**
      * {@link AddMsgJInternalController} used for storing new messages on the
@@ -170,7 +173,8 @@ public class MainJFrameController implements ActionListener {
      * @param aev {@link ActionEvent} isn't used for anything
      */
     private void logButton_action(ActionEvent aev) {
-        logger.debug("" + aev.getActionCommand());
+        methodName = "logButton_action(ActionEvent): ";
+        logger.debug(methodName + aev.getActionCommand() + ")");
 
         // Create a file chooser, as shown in "Java Tutorials Code Sample – FileChooserDemo.java"
         JFileChooser fc = new JFileChooser();
@@ -180,23 +184,27 @@ public class MainJFrameController implements ActionListener {
         if (this.jFrameDesktop instanceof MainJFrameDesktop) {
             returnVal = fc.showOpenDialog(jFrameDesktop);
         } else {
-            logger.debug("could not get state from JFileChooser");
+            logger.debug(methodName + "could not get state from JFileChooser");
             return;
         }
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
-            logger.debug("opening " + file.getName() + ".");
+            logger.debug(methodName + "opening " + file.getName() + ".");
 
             // load a new frame with the log messages from the chosen key
             try (ObjectInputStream input = new ObjectInputStream(new FileInputStream(file))) {
                 RSAPublicKey key = (RSAPublicKey) input.readObject();
-                logger.debug("RSAPublicKey successfully parsed");
+                
+                logger.debug(methodName + "(RSAPublicKey) input.readObject() " 
+                    + String.valueOf(key instanceof RSAPublicKey));
 
                 // get the active token and load the log for it
                 if (ctrl.registerToken(this.key, this.ciphertext)) {
                     Iterator<String> it = ctrl.getData(key).iterator();
-                    logger.debug("manager.getData(key).iterator() = " + it.toString());
+                    
+                    logger.debug(methodName 
+                        + "manager.getData(key).iterator() = " + it.toString());
 
                     // use LogJInternalFrame, if MainJFrameDesktop is active
                     if (this.jFrameDesktop instanceof MainJFrameDesktop) {

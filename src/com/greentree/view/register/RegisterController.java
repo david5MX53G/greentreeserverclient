@@ -27,8 +27,11 @@ public class RegisterController implements ActionListener {
     /**
      * {@link org.apache.logging.log4j.Logger} is for logging logs to the log
      */
-    Logger logger = LogManager.getLogger();
-
+    private static final Logger LOG = LogManager.getLogger();
+    
+    /** This identifies which method is logging messages */
+    private static String methodName = "unknown method ";
+    
     /**
      * <code>{@link com.greentree.view.RegisterJFrame}</code> object sending
      * events to the {@link
@@ -49,11 +52,12 @@ public class RegisterController implements ActionListener {
      * controller
      */
     public RegisterController(RegisterJInternalFrame iFrame, JDesktopPane mainDesktop) {
+        methodName = "RegisterController(RegisterJInternalFrame, JDesktopPane) ";
         this.regJInternalFrame = iFrame;
         this.regJInternalFrame.getCancelBtn().addActionListener(this);
         this.regJInternalFrame.getSubmitBtn().addActionListener(this);
         this.mainDesktop = mainDesktop;
-        logger.debug("RegisterController(RegisterJInternalFrame iFrame) PASSED");
+        LOG.debug(methodName + "done");
     }
 
     /**
@@ -67,7 +71,7 @@ public class RegisterController implements ActionListener {
      */
     @Override
     public void actionPerformed(ActionEvent e) {
-        logger.debug("actionPerformed(ActionEvent) " + e.getActionCommand());
+        LOG.debug(methodName + e.getActionCommand());
 
         /**
          * if this was registered with a RegisterJInternalFrame, use
@@ -102,13 +106,20 @@ public class RegisterController implements ActionListener {
      * RegisterJFrame#getSubmitBtn()}</code> <code>JButton</code>
      */
     private void submitBtn_actionPerformed(ActionEvent ev) {
+        methodName = "submitBtn_actionPerformed(ActionEvent) ";
         String msg;
         GreenTreeController ctrl = GreenTreeController.getInstance();
-        logger.debug("GreenTreeManager initialized");
+        
+        if (ctrl instanceof GreenTreeController) {
+            LOG.debug(methodName + "GreenTreeController initialized");
+        } else {
+            LOG.error(methodName + "failed to get GreenTreeController");
+        }
 
         // register GreenTreeManager Token
         if (!ctrl.registerToken(new String(regJInternalFrame.getPass()))) {
-            logger.debug("GreenTreeManager.registerToken(String) failed");
+            LOG.error(methodName + 
+                "GreenTreeManager.registerToken(String) failed");
 
             JOptionPane.showInternalMessageDialog(
                 mainDesktop,
@@ -120,8 +131,17 @@ public class RegisterController implements ActionListener {
 
         // return RSAPublicKey for user to save and use in future auth events
         else {
-            logger.debug("GreenTreeManager.registerToken(String) succeeded");
+            LOG.debug("GreenTreeManager.registerToken(String) succeeded");
             RSAPublicKey key = ctrl.getPublicKey();
+            
+            if (key instanceof RSAPublicKey) {
+                LOG.debug(methodName + "GreenTreeController.getPublicKey() "
+                    + "returned RSAPublicKey");
+            } else {
+                LOG.error(methodName + "GreenTreeController.getPublicKey() "
+                    + "did not return RSAPublicKey");
+            }
+            
             JFileChooser fc = new JFileChooser();
             int chooserState;
 
@@ -130,14 +150,14 @@ public class RegisterController implements ActionListener {
             if (chooserState == JFileChooser.APPROVE_OPTION) {
                 File file = fc.getSelectedFile();
                 String filePath = file.getAbsolutePath();
-                logger.debug("Saving to: " + filePath + ".");
+                LOG.debug(methodName + "saving RSAPublicKey to: " + filePath);
 
                 // write the public key to the file chosen by the user
                 try (ObjectOutputStream out
                     = new ObjectOutputStream(new FileOutputStream(filePath))) {
                     out.writeObject(key);
                 } catch (IOException ex) {                    
-                    logger.debug("FileOutputStream(" + filePath + ") " 
+                    LOG.debug("FileOutputStream(" + filePath + ") " 
                         + ex.getMessage());
                     
                     JOptionPane.showInternalMessageDialog(
@@ -148,7 +168,7 @@ public class RegisterController implements ActionListener {
                     );
                 }
             } else {
-                logger.debug("JFileChooser cancelled by user.");
+                LOG.debug(methodName + "JFileChooser cancelled by user.");
             }
 
             this.regJInternalFrame.dispose();
@@ -159,6 +179,6 @@ public class RegisterController implements ActionListener {
         if (this.regJInternalFrame instanceof RegisterJInternalFrame) {
             this.regJInternalFrame.dispose();
         }
-        logger.debug("cancelButton_ActionPerformed(ActionEvent) PASSED");
+        LOG.debug("cancelButton_ActionPerformed(ActionEvent) PASSED");
     }
 }

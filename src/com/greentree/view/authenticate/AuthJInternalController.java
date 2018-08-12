@@ -99,16 +99,6 @@ public class AuthJInternalController implements ActionListener {
 
         // initialize the GreenTreeManager Singleton
         GreenTreeController ctrl = GreenTreeController.getInstance();
-        /*if (!GreenTreeController.loadProperties()) {
-            msg = "missing properties file";
-            logger.debug(msg);
-            JOptionPane.showInternalMessageDialog(
-                this.mainController.getDesktop().getDesktopPane(),
-                msg,
-                "Error",
-                JOptionPane.ERROR_MESSAGE
-            );
-        }*/
 
         try {
             Cipher cipher = Cipher.getInstance("RSA");
