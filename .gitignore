@@ -1,7 +1,7 @@
-build/*
-dist/*
-bin/*
-**/private/
+**/build/**
+**/dist/**
+**/bin/**
+**/private/**
 *.swp
 uml/*.png
 TODO
