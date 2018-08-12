@@ -12,7 +12,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
-import java.util.logging.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -24,6 +23,32 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author david5MX53G
  */
+
+/*
+@startuml
+class GreenTreeController <<Singleton>> {
+    -GreenTreeController() : GreenTreeController
+    +addBlock(String, RSAPublicKey, long, long) : boolean
+    -closeSocket() : boolean
+    -finalize() : void
+    +getData(RSAPublicKey) : ArrayList<String>
+    {static} +getInstance() : GreenTreeController
+    +getPublicKey() : RSAPublicKey
+    -openSocket() : boolean
+    +registerService(String) : boolean
+    +registerToken(RSAPublicKey, String) : boolean
+    +registerToken(String) : boolean
+    {static} -LOG : Logger
+    {static} -PORT : int
+    {static} -in : ObjectInputStream
+    {static} -inetAddr : InetAddress
+    {static} -instance_ : GreenTreeController
+    -methodName : String
+    {static} -out : ObjectOutputStream
+    {static} -socket : Socket
+}
+@enduml
+*/
 public class GreenTreeController {
 
     /**
@@ -47,8 +72,10 @@ public class GreenTreeController {
     private static Socket socket;
     private static ObjectOutputStream out;
     private static ObjectInputStream in;
-    
-    /** This is used to identify the method in log messages */
+
+    /**
+     * This is used to identify the method in log messages
+     */
     private String methodName;
 
     /**
@@ -64,11 +91,11 @@ public class GreenTreeController {
         }
         LOG.debug("GreenTreeController() complete");
     }
-    
+
     /**
-     * This ensures the {@link GreenTreeController#socket} and associated 
+     * This ensures the {@link GreenTreeController#socket} and associated
      * streams are closed.
-     * 
+     *
      * @throws Throwable when badness happens
      */
     @Override
@@ -90,16 +117,16 @@ public class GreenTreeController {
 
         return instance_;
     }
-    
-    /** 
-     * This opens a {@link GreenTreeController#socket}, {@link 
+
+    /**
+     * This opens a {@link GreenTreeController#socket}, {@link
      * GreenTreeController#in}, and {@link GreenTreeController#out}.
      */
     private boolean openSocket() {
         boolean result = false;
         try {
             methodName = "boolean openSocket()";
-            
+
             // open a socket
             socket = new Socket(inetAddr, PORT);
             if (socket instanceof Socket) {
@@ -107,7 +134,7 @@ public class GreenTreeController {
             } else {
                 throw new IOException(methodName + " Socket failed");
             }
-            
+
             // open outputstream
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
@@ -117,7 +144,7 @@ public class GreenTreeController {
                 throw new IOException(this.getClass().getSimpleName()
                     + " ObjectOutputStream getOut() failed");
             }
-            
+
             // open inputstream
             in = new ObjectInputStream(socket.getInputStream());
             if (in instanceof ObjectInputStream) {
@@ -126,11 +153,11 @@ public class GreenTreeController {
                 throw new IOException(this.getClass().getSimpleName()
                     + " ObjectOutputStream getOut() failed");
             }
-            
+
             // update result
             result = true;
         } catch (IOException e) {
-            LOG.error(methodName + " threw " + e.getClass().getSimpleName() 
+            LOG.error(methodName + " threw " + e.getClass().getSimpleName()
                 + ": " + e.getMessage());
         }
         return result;
@@ -150,15 +177,15 @@ public class GreenTreeController {
             if (in != null) {
                 in.close();
             }
-            
+
             if (out != null) {
                 out.close();
             }
-            
+
             if (socket != null) {
                 socket.close();
             }
-            
+
             result = true;
             LOG.debug(methodName + " complete");
         } catch (NullPointerException | IOException ex) {
@@ -171,7 +198,7 @@ public class GreenTreeController {
 
     /**
      * This connects to a remote <code>GreenTreeServer</code>, sends it an
-     * {@link java.security.interfaces.RSAPublicKey} and {@link String} with 
+     * {@link java.security.interfaces.RSAPublicKey} and {@link String} with
      * which to authenticate a {@link com.greentree.model.domain.Token}.
      *
      * @param key <code>String</code> for the <code>Token</code>
@@ -185,16 +212,16 @@ public class GreenTreeController {
         try {
             this.openSocket();
             String command = "registerToken(RSAPublicKey, String)";
-            
+
             out.writeObject(command);
             LOG.debug(methodName + " command String written to socket");
-            
+
             out.writeObject(key);
             LOG.debug(methodName + " RSAPublicKey written to socket");
-            
+
             out.writeObject(ciphertext);
             LOG.debug(methodName + " ciphertext String written to socket");
-                        
+
             result = (Boolean) in.readObject();
         } catch (ClassNotFoundException | IOException ex) {
             LOG.error(methodName + " threw "
@@ -208,10 +235,10 @@ public class GreenTreeController {
     }
 
     /**
-     * This connects to a remote <code>GreenTreeServer</code> and registers a 
+     * This connects to a remote <code>GreenTreeServer</code> and registers a
      * new {@link com.greentree.model.domain.Token}.
-     * 
-     * @param plaintext {@link String} will be used to authenticate 
+     *
+     * @param plaintext {@link String} will be used to authenticate
      * @return <code>true</code>, if successful
      */
     public boolean registerToken(String plaintext) {
@@ -221,14 +248,14 @@ public class GreenTreeController {
         try {
             this.openSocket();
             String command = "registerToken(String)";
-            
+
             out.writeObject(command);
-            LOG.debug(methodName + " command String written to socket: " 
+            LOG.debug(methodName + " command String written to socket: "
                 + command);
-            
+
             out.writeObject(plaintext);
             LOG.debug(methodName + " plaintext written to socket");
-            
+
             result = (Boolean) in.readObject();
         } catch (ClassNotFoundException | IOException ex) {
             LOG.error(methodName + "threw "
@@ -254,7 +281,7 @@ public class GreenTreeController {
         methodName = "boolean registerService(String)";
         LOG.debug(methodName + " started: " + tokenService);
         boolean result = false;
-        
+
         try {
             this.openSocket();
             out.writeObject("registerService(String)");
@@ -274,51 +301,51 @@ public class GreenTreeController {
     public ArrayList<String> getData(RSAPublicKey key) {
         methodName = "ArrayList<String> getData(RSAPublicKey)";
         ArrayList<String> result = null;
-        
+
         try {
             this.openSocket();
             out.writeObject("getData(RSAPublicKey)");
             out.writeObject(key);
             result = (ArrayList<String>) in.readObject();
         } catch (ClassNotFoundException | IOException ex) {
-            LOG.error(methodName + " threw " + ex.getClass().getSimpleName() 
+            LOG.error(methodName + " threw " + ex.getClass().getSimpleName()
                 + " " + ex.getMessage());
         } finally {
             this.closeSocket();
         }
-        
+
         return result;
     }
 
     /**
-     * This connects to a remote <code>GreenTreeServer</code> and retrieves the 
-     * {@link RSAPublicKey} of the active {@link Token} for this client on the 
+     * This connects to a remote <code>GreenTreeServer</code> and retrieves the
+     * {@link RSAPublicKey} of the active {@link Token} for this client on the
      * server.
-     * 
+     *
      * @return <code>RSAPublicKey</code> of the active client <code>Token</code>
      */
     public RSAPublicKey getPublicKey() {
         methodName = "RSAPublicKey getPublicKey()";
         LOG.debug(methodName + " started");
         RSAPublicKey result = null;
-        
+
         try {
             this.openSocket();
-            out.writeObject("getPublicKey()");            
+            out.writeObject("getPublicKey()");
             result = (RSAPublicKey) in.readObject();
-            
+
             if (result instanceof RSAPublicKey) {
                 LOG.debug(methodName + " acquired RSAPublicKey");
             } else {
                 throw new ClassNotFoundException(" failed to get RSAPublicKey");
             }
         } catch (ClassNotFoundException | IOException ex) {
-            LOG.error(methodName + " threw " + ex.getClass().getSimpleName() 
+            LOG.error(methodName + " threw " + ex.getClass().getSimpleName()
                 + ": " + ex.getMessage());
         } finally {
             this.closeSocket();
         }
-        
+
         return result;
     }
 
@@ -326,7 +353,7 @@ public class GreenTreeController {
         methodName = "addBlock(String, RSAPublicKey, long, long)";
         LOG.debug(methodName + " started");
         boolean result = false;
-        
+
         try {
             this.openSocket();
             out.writeObject("addBlock(String, RSAPublicKey, long, long)");
@@ -335,19 +362,19 @@ public class GreenTreeController {
             out.writeObject(notBefore);
             out.writeObject(notAfter);
             result = (boolean) in.readObject();
-            
+
             if (result) {
                 LOG.debug(methodName + " returned true");
             } else {
                 throw new IOException(methodName + " returned false");
             }
         } catch (ClassNotFoundException | IOException ex) {
-            LOG.error(methodName + " threw " + ex.getClass().getSimpleName() 
+            LOG.error(methodName + " threw " + ex.getClass().getSimpleName()
                 + ": " + ex.getMessage());
         } finally {
             this.closeSocket();
         }
-        
+
         return result;
     }
 }

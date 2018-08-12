@@ -1,0 +1,4 @@
+* moved view classes into separated GreenTreeServerClient project and renamed main project to "GreenTreeServer"
+* added new GreenTreeController class to serve as the interface between client view classes and GreenTreeServer server class
+* tested all new class methods and confirmed they work
+* updated test, execution, and design documentation to reflect new classes and test results

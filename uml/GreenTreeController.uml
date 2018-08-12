@@ -1,0 +1,23 @@
+@startuml
+class GreenTreeController <<Singleton>> {
+    -GreenTreeController() : GreenTreeController
+    +addBlock(String, RSAPublicKey, long, long) : boolean
+    -closeSocket() : boolean
+    -finalize() : void
+    +getData(RSAPublicKey) : ArrayList<String>
+    {static} +getInstance() : GreenTreeController
+    +getPublicKey() : RSAPublicKey
+    -openSocket() : boolean
+    +registerService(String) : boolean
+    +registerToken(RSAPublicKey, String) : boolean
+    +registerToken(String) : boolean
+    {static} -LOG : Logger
+    {static} -PORT : int
+    {static} -in : ObjectInputStream
+    {static} -inetAddr : InetAddress
+    {static} -instance_ : GreenTreeController
+    -methodName : String
+    {static} -out : ObjectOutputStream
+    {static} -socket : Socket
+}
+@enduml

@@ -6,7 +6,6 @@
 package com.greentree.controller;
 
 import com.greentree.model.domain.Token;
-import java.security.interfaces.RSAPublicKey;
 
 /**
  *
