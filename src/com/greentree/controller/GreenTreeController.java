@@ -5,6 +5,7 @@
  */
 package com.greentree.controller;
 
+import com.greentree.model.services.manager.PropertyManager;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -12,8 +13,10 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import javax.xml.parsers.ParserConfigurationException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.xml.sax.SAXException;
 
 /**
  * This makes a {@link java.net.Socket} connection to a {@link
@@ -48,7 +51,7 @@ class GreenTreeController <<Singleton>> {
     {static} -socket : Socket
 }
 @enduml
-*/
+ */
 public class GreenTreeController {
 
     /**
@@ -68,7 +71,7 @@ public class GreenTreeController {
      * TODO: move these params into a config file accessed via a Properties obj
      */
     private static InetAddress inetAddr;
-    private static final int PORT = 8189;
+    private static int port;
     private static Socket socket;
     private static ObjectOutputStream out;
     private static ObjectInputStream in;
@@ -84,12 +87,16 @@ public class GreenTreeController {
      */
     private GreenTreeController() {
         try {
-            inetAddr = InetAddress.getLocalHost();
-        } catch (IOException ex) {
+            inetAddr = InetAddress.getByName(
+                PropertyManager.getProperty("server.host")
+            );
+            port = Integer.valueOf(PropertyManager.getProperty("server.port"));
+        } catch (IOException | ParserConfigurationException | SAXException ex) {
             LOG.error("constructor threw " + ex.getClass().getSimpleName()
                 + ": " + ex.getMessage());
         }
-        LOG.debug("GreenTreeController() complete");
+        LOG.debug("GreenTreeController() server host,port are " 
+            + inetAddr.getHostAddress() + "," + String.valueOf(port));
     }
 
     /**
@@ -128,7 +135,7 @@ public class GreenTreeController {
             methodName = "boolean openSocket()";
 
             // open a socket
-            socket = new Socket(inetAddr, PORT);
+            socket = new Socket(inetAddr, port);
             if (socket instanceof Socket) {
                 LOG.debug(methodName + " Socket acquired");
             } else {

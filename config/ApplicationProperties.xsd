@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <xsd:complexType name="servertype">
+        <xsd:all>
+            <xsd:element name="port" type="xsd:integer"/>
+            <xsd:element name="host" type="xsd:string"/>
+        </xsd:all>
+    </xsd:complexType>
+    <xsd:element name="server" type="servertype"/>
+    
+    <xsd:element name="applicationproperties">
+        <xsd:complexType>
+            <xsd:all>
+                <xsd:element ref="server"/>
+            </xsd:all>
+        </xsd:complexType>
+    </xsd:element>
+</xsd:schema>
